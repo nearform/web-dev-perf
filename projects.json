@@ -1,0 +1,12 @@
+[
+  {
+    "dir": "cra",
+    "script": "start",
+    "file": "src/App.js"
+  },
+  {
+    "dir": "vite",
+    "script": "dev",
+    "file": "src/App.jsx"
+  }
+]
