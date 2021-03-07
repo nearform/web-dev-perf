@@ -1,5 +1,10 @@
 [
   {
+    "dir": "_snowpack",
+    "script": "start",
+    "file": "src/App.jsx"
+  },
+  {
     "dir": "cra",
     "script": "start",
     "file": "src/App.js"
@@ -8,5 +13,10 @@
     "dir": "vite",
     "script": "dev",
     "file": "src/App.jsx"
+  },
+  {
+    "dir": "next",
+    "script": "dev",
+    "file": "pages/index.js"
   }
 ]
