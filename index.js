@@ -1,3 +1,6 @@
+'use strict'
+require('make-promises-safe')
+
 const fs = require('fs')
 const path = require('path')
 const util = require('util')
