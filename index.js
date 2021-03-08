@@ -61,6 +61,11 @@ async function runTests(browser) {
 
     const app = childProcess.exec(`npm run ${script}`, { cwd: basePath })
 
+    if (process.env.DEBUG) {
+      app.stdout.pipe(process.stdout)
+      app.stderr.pipe(process.stderr)
+    }
+
     const startup = process.hrtime()
 
     console.log(`Testing ${dir}...`)
@@ -101,7 +106,7 @@ async function runTests(browser) {
 
 async function run() {
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: true,
   })
 
   console.log('Running', iterations, 'iterations')
