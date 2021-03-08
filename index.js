@@ -14,7 +14,7 @@ const placeholder = '<div>placeholder</div>'
 const iterations = 20
 const url = 'http://localhost:3000'
 
-async function runIterations(page, filePath, originalContent) {
+async function runReloadTime(page, filePath, originalContent) {
   const histogram = hdr.build()
 
   for (let i = 0; i < iterations; i++) {
@@ -43,7 +43,14 @@ async function runIterations(page, filePath, originalContent) {
 
 async function runTests(browser) {
   const table = new Table({
-    head: ['App', 'Min (ms)', 'Mean (ms)', '99th (ms)', 'Max (ms)'],
+    head: [
+      'App',
+      'Startup (s)',
+      'Min (ms)',
+      'Mean (ms)',
+      '99th (ms)',
+      'Max (ms)',
+    ],
   })
 
   for (let project of projects) {
@@ -54,25 +61,33 @@ async function runTests(browser) {
 
     const app = childProcess.exec(`npm run ${script}`, { cwd: basePath })
 
+    const startup = process.hrtime()
+
+    console.log(`Testing ${dir}...`)
+
     await tryConnect(3000)
 
     const page = await browser.newPage()
     await page.goto(url)
 
+    const startupDelta = process.hrtime(startup)
+
+    const startupTimeSeconds = (startupDelta[0] * 1e9 + startupDelta[1]) / 1e9
+
     try {
-      const histogram = await runIterations(
+      const reloadTimeHistogram = await runReloadTime(
         page,
         filePath,
-        originalContent,
-        table
+        originalContent
       )
 
       table.push([
         dir,
-        histogram.minNonZeroValue,
-        histogram.mean,
-        histogram.getValueAtPercentile(99),
-        histogram.maxValue,
+        startupTimeSeconds,
+        reloadTimeHistogram.minNonZeroValue,
+        reloadTimeHistogram.mean,
+        reloadTimeHistogram.getValueAtPercentile(99),
+        reloadTimeHistogram.maxValue,
       ])
     } finally {
       await page.close()

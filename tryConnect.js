@@ -1,6 +1,6 @@
 const net = require('net')
 
-function tryConnect(port, retryInterval = 1000, maxRetries = 10) {
+function tryConnect(port, retryInterval = 1000, maxRetries = 20) {
   return new Promise((resolve, reject) => {
     let retries = 0
 
