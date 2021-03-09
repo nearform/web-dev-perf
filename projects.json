@@ -1,22 +1,42 @@
 [
   {
+    "name": "create-react-app",
     "dir": "cra",
-    "script": "start",
+    "scripts": {
+      "dev": "start",
+      "build": "build"
+    },
+    "buildDir": "build",
     "file": "src/App.js"
   },
   {
+    "name": "vite",
     "dir": "vite",
-    "script": "dev",
+    "scripts": {
+      "dev": "dev",
+      "build": "build"
+    },
+    "buildDir": "dist",
     "file": "src/App.jsx"
   },
   {
+    "name": "snowpack",
     "dir": "_snowpack",
-    "script": "start",
+    "scripts": {
+      "dev": "start",
+      "build": "build"
+    },
+    "buildDir": "build",
     "file": "src/App.jsx"
   },
   {
+    "name": "next.js",
     "dir": "next",
-    "script": "dev",
+    "scripts": {
+      "dev": "dev",
+      "build": "build"
+    },
+    "buildDir": ".next",
     "file": "pages/index.js"
   }
 ]

@@ -15,6 +15,7 @@
   "license": "ISC",
   "dependencies": {
     "cli-table3": "^0.6.0",
+    "fast-folder-size": "^1.0.3",
     "hdr-histogram-js": "^2.0.1",
     "make-promises-safe": "^5.1.0",
     "puppeteer": "^8.0.0",

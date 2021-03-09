@@ -9,6 +9,7 @@ const puppeteer = require('puppeteer')
 const hdr = require('hdr-histogram-js')
 const kill = util.promisify(require('tree-kill'))
 const Table = require('cli-table3')
+const fastFolderSize = util.promisify(require('fast-folder-size'))
 
 const projects = require('./projects.json')
 const tryConnect = require('./tryConnect')
@@ -16,6 +17,20 @@ const tryConnect = require('./tryConnect')
 const placeholder = '<div>placeholder</div>'
 const iterations = 20
 const url = 'http://localhost:3000'
+
+const ms = 1e6
+const s = 1e9
+const bytesToMB = 1 / 1024 / 1024
+
+function timer(resolution = ms) {
+  const start = process.hrtime()
+
+  return () => {
+    const delta = process.hrtime(start)
+
+    return (delta[0] * 1e9 + delta[1]) / resolution
+  }
+}
 
 async function runReloadTime(page, filePath, originalContent) {
   const histogram = hdr.build()
@@ -32,20 +47,18 @@ async function runReloadTime(page, filePath, originalContent) {
 
     fs.writeFileSync(filePath, newContent)
 
-    const start = process.hrtime()
+    const end = timer()
 
     await page.waitForSelector(`#${id}`)
 
-    const delta = process.hrtime(start)
-
-    histogram.recordValue((delta[0] * 1e9 + delta[1]) / 1e6)
+    histogram.recordValue(end())
   }
 
   return histogram
 }
 
-async function runTests(browser) {
-  const table = new Table({
+async function runProjects() {
+  const browserTable = new Table({
     head: [
       'App',
       'Startup (s)',
@@ -56,69 +69,113 @@ async function runTests(browser) {
     ],
   })
 
+  const bundleTable = new Table({
+    head: ['App', 'Build time (s)', 'Bundle size (MB)'],
+  })
+
   for (let project of projects) {
-    const { dir, script, file } = project
+    const { dir } = project
     const basePath = path.join(__dirname, 'packages', dir)
-    const filePath = path.join(basePath, file)
-    const originalContent = fs.readFileSync(filePath, 'utf-8')
 
-    const app = childProcess.exec(`npm run ${script}`, { cwd: basePath })
-
-    if (process.env.DEBUG) {
-      app.stdout.pipe(process.stdout)
-      app.stderr.pipe(process.stderr)
-    }
-
-    const startup = process.hrtime()
-
-    console.log(`Testing ${dir}...`)
-
-    await tryConnect(3000)
-
-    const page = await browser.newPage()
-    await page.goto(url)
-
-    const startupDelta = process.hrtime(startup)
-
-    const startupTimeSeconds = (startupDelta[0] * 1e9 + startupDelta[1]) / 1e9
+    const browser = await puppeteer.launch({
+      headless: true,
+    })
 
     try {
-      const reloadTimeHistogram = await runReloadTime(
-        page,
-        filePath,
-        originalContent
-      )
-
-      table.push([
-        dir,
-        startupTimeSeconds,
-        reloadTimeHistogram.minNonZeroValue,
-        reloadTimeHistogram.mean,
-        reloadTimeHistogram.getValueAtPercentile(99),
-        reloadTimeHistogram.maxValue,
-      ])
+      await runBrowserTests(basePath, project, browser, browserTable)
     } finally {
-      await page.close()
-      fs.writeFileSync(filePath, originalContent)
-      await kill(app.pid)
+      await browser.close()
     }
+
+    await runBundleTests(basePath, project, bundleTable)
   }
 
-  console.log(table.toString())
+  console.log(browserTable.toString())
+  console.log(bundleTable.toString())
+}
+
+async function runBundleTests(basePath, project, table) {
+  const {
+    scripts: { build },
+    name,
+    buildDir,
+  } = project
+  const buildScript = `npm run ${build}`
+
+  console.log(`Executing ${buildScript} in ${basePath}`)
+
+  const endBuildTime = timer(s)
+
+  const app = childProcess.exec(buildScript, { cwd: basePath })
+
+  if (process.env.DEBUG) {
+    app.stdout.pipe(process.stdout)
+    app.stderr.pipe(process.stderr)
+  }
+
+  await new Promise((resolve, reject) => {
+    app.once('exit', resolve)
+    app.once('error', reject)
+  })
+
+  const buildTimeSeconds = endBuildTime()
+
+  const folderSize = await fastFolderSize(path.join(basePath, buildDir))
+
+  table.push([name, buildTimeSeconds, folderSize * bytesToMB])
+}
+
+async function runBrowserTests(basePath, project, browser, table) {
+  const { file, scripts, name } = project
+
+  const filePath = path.join(basePath, file)
+  const originalContent = fs.readFileSync(filePath, 'utf-8')
+  const devScript = `npm run ${scripts.dev}`
+
+  console.log(`Executing ${devScript} in ${basePath}`)
+
+  const app = childProcess.exec(devScript, { cwd: basePath })
+
+  if (process.env.DEBUG) {
+    app.stdout.pipe(process.stdout)
+    app.stderr.pipe(process.stderr)
+  }
+
+  const endStartupTime = timer(s)
+
+  console.log(`Testing startup time and reload time of ${name}...`)
+
+  await tryConnect(3000)
+
+  const page = await browser.newPage()
+  await page.goto(url)
+
+  const startupTimeSeconds = endStartupTime()
+
+  try {
+    const reloadTimeHistogram = await runReloadTime(
+      page,
+      filePath,
+      originalContent
+    )
+
+    table.push([
+      name,
+      startupTimeSeconds,
+      reloadTimeHistogram.minNonZeroValue,
+      reloadTimeHistogram.mean,
+      reloadTimeHistogram.getValueAtPercentile(99),
+      reloadTimeHistogram.maxValue,
+    ])
+  } finally {
+    await page.close()
+    fs.writeFileSync(filePath, originalContent)
+    await kill(app.pid)
+  }
 }
 
 async function run() {
-  const browser = await puppeteer.launch({
-    headless: true,
-  })
-
-  console.log('Running', iterations, 'iterations')
-
-  try {
-    await runTests(browser)
-  } finally {
-    await browser.close()
-  }
+  await runProjects()
 }
 
 run()
