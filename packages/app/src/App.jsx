@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import TodoItem from './components/TodoItem'
-// import './App.css'
 
 function App() {
   const [input, setInput] = useState('')
