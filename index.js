@@ -16,7 +16,6 @@ const tryConnect = require('./tryConnect')
 
 const placeholder = '<div>placeholder</div>'
 const iterations = 20
-const url = 'http://localhost:3000'
 
 const ms = 1e6
 const s = 1e9
@@ -126,7 +125,9 @@ async function runBundleTests(basePath, project, table) {
 }
 
 async function runBrowserTests(basePath, project, browser, table) {
-  const { file, scripts, name } = project
+  const { file, scripts, name, port } = project
+
+  const url = `http://localhost:${port}`
 
   const filePath = path.join(basePath, file)
   const originalContent = fs.readFileSync(filePath, 'utf-8')
@@ -145,7 +146,7 @@ async function runBrowserTests(basePath, project, browser, table) {
 
   console.log(`Testing startup time and reload time of ${name}...`)
 
-  await tryConnect(3000)
+  await tryConnect(port)
 
   const page = await browser.newPage()
   await page.goto(url)

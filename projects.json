@@ -7,7 +7,8 @@
       "build": "build"
     },
     "buildDir": "build",
-    "file": "src/App.js"
+    "file": "src/App.js",
+    "port": 3000
   },
   {
     "name": "vite",
@@ -17,7 +18,8 @@
       "build": "build"
     },
     "buildDir": "dist",
-    "file": "src/App.jsx"
+    "file": "src/App.jsx",
+    "port": 3001
   },
   {
     "name": "snowpack",
@@ -27,7 +29,8 @@
       "build": "build"
     },
     "buildDir": "build",
-    "file": "src/App.jsx"
+    "file": "src/App.jsx",
+    "port": 3002
   },
   {
     "name": "next.js",
@@ -37,6 +40,7 @@
       "build": "build"
     },
     "buildDir": ".next",
-    "file": "pages/index.js"
+    "file": "pages/index.js",
+    "port": 3003
   }
 ]

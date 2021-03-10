@@ -20,5 +20,8 @@
     "make-promises-safe": "^5.1.0",
     "puppeteer": "^8.0.0",
     "tree-kill": "^1.2.2"
+  },
+  "devDependencies": {
+    "lerna": "^3.22.1"
   }
 }
